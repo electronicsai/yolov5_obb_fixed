@@ -509,7 +509,7 @@ def labels_to_class_weights(labels, nc=80):
         return torch.Tensor()
 
     labels = np.concatenate(labels, 0)  # labels.shape = (866643, 5) for COCO
-    classes = labels[:, 0].astype(np.int)  # labels = [class xywh]
+    classes = labels[:, 0].astype(int)  # labels = [class xywh]
     weights = np.bincount(classes, minlength=nc)  # occurrences per class
 
     # Prepend gridpoint count (for uCE training)
@@ -524,7 +524,7 @@ def labels_to_class_weights(labels, nc=80):
 
 def labels_to_image_weights(labels, nc=80, class_weights=np.ones(80)):
     # Produces image weights based on class_weights and image contents
-    class_counts = np.array([np.bincount(x[:, 0].astype(np.int), minlength=nc) for x in labels])
+    class_counts = np.array([np.bincount(x[:, 0].astype(int), minlength=nc) for x in labels])
     image_weights = (class_weights.reshape(1, nc) * class_counts).sum(1)
     # index = random.choices(range(n), weights=image_weights, k=1)  # weight image sample
     return image_weights
@@ -770,7 +770,7 @@ def non_max_suppression(prediction, conf_thres=0.25, iou_thres=0.45, classes=Non
     return output
 
 def non_max_suppression_obb(prediction, conf_thres=0.25, iou_thres=0.45, classes=None, agnostic=False, multi_label=False,
-                        labels=(), max_det=1500):
+                        labels=(), max_det=1500, device_id=None):
     """Runs Non-Maximum Suppression (NMS) on inference results_obb
     Args:
         prediction (tensor): (b, n_all_anchors, [cx cy l s obj num_cls theta_cls])
@@ -850,7 +850,7 @@ def non_max_suppression_obb(prediction, conf_thres=0.25, iou_thres=0.45, classes
         rboxes = x[:, :5].clone() 
         rboxes[:, :2] = rboxes[:, :2] + c # rboxes (offset by class)
         scores = x[:, 5]  # scores
-        _, i = obb_nms(rboxes, scores, iou_thres)
+        _, i = obb_nms(rboxes, scores, iou_thres, device_id)
         if i.shape[0] > max_det:  # limit detections
             i = i[:max_det]
 
